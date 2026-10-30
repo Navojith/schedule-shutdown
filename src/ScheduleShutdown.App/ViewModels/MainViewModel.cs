@@ -150,8 +150,18 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(IsScheduled))]
     private void Cancel()
     {
-        if (_scheduler.Cancel())
-            _log.Write("Cancelled shutdown");
+        if (!_scheduler.Cancel())
+            return;
+
+        // A restore message is about the schedule that just ended.
+        IsInfoOpen = false;
+        _log.Write("Cancelled shutdown");
+    }
+
+    public void ShowInfo(string message)
+    {
+        InfoMessage = message;
+        IsInfoOpen = true;
     }
 
     partial void OnSelectedTimeChanged(TimeSpan value)
@@ -195,8 +205,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (!_environment.IsDryRun)
             return;
 
-        InfoMessage = "Dry run: the shutdown command was written to app.log instead of being run.";
-        IsInfoOpen = true;
+        ShowInfo("Dry run: the shutdown command was written to app.log instead of being run.");
     }
 
     private void ShowError(string message)

@@ -1,10 +1,14 @@
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.Windows.AppLifecycle;
+using Microsoft.Windows.AppNotifications;
 using ScheduleShutdown.App.ViewModels;
 using ScheduleShutdown.App.Views;
 using ScheduleShutdown.Core.Formatting;
+using ScheduleShutdown.Core.Models;
 using ScheduleShutdown.Core.Scheduling;
 
 namespace ScheduleShutdown.App.Services;
@@ -44,7 +48,17 @@ public sealed class AppShell(
         scheduler.DueReached += (_, _) => OnDueReached();
         scheduler.ShutdownFailed += (_, _) => ShowMainWindow();
 
+        var dispatcherQueue = DispatcherQueue.GetForCurrentThread();
+        Program.Redirected += (_, args) => dispatcherQueue.TryEnqueue(() => OnRedirected(args));
+
         _mainWindow.Activate();
+
+        // After the main window, so an overdue schedule's countdown window opens on top of it.
+        RestoreSchedule();
+
+        // A toast clicked while the app wasn't running launches it with that toast's action.
+        if (AppInstance.GetCurrent().GetActivatedEventArgs() is { Kind: ExtendedActivationKind.AppNotification, Data: AppNotificationActivatedEventArgs toast })
+            OnNotificationAction(this, NotificationService.ParseAction(toast));
     }
 
     public void ShowMainWindow()
@@ -53,6 +67,39 @@ public sealed class AppShell(
             return;
 
         WindowFocus.BringToFront(_mainWindow);
+    }
+
+    private void RestoreSchedule()
+    {
+        var outcome = scheduler.Restore();
+        if (outcome == RestoreOutcome.NothingSaved)
+            return;
+
+        log.Write(scheduler.Current is { } state
+            ? $"Restore: {outcome}, shutdown at {state.Target:yyyy-MM-dd HH:mm:ss zzz} (force: {state.Options.Force})"
+            : $"Restore: {outcome}");
+
+        switch (outcome)
+        {
+            case RestoreOutcome.Restored:
+                mainViewModel.ShowInfo("Restored the shutdown that was scheduled before Schedule Shutdown closed.");
+                break;
+            case RestoreOutcome.RestoredOverdue:
+                mainViewModel.ShowInfo("The scheduled shutdown time passed while Schedule Shutdown wasn't running. Cancel it now if you don't want it.");
+                break;
+            case RestoreOutcome.DiscardedStale:
+                mainViewModel.ShowInfo("A scheduled shutdown was missed more than 12 hours ago while Schedule Shutdown wasn't running, so it was discarded.");
+                break;
+        }
+    }
+
+    /// <summary>A later launch (Start menu, or a toast click routed here) handed its activation to this instance.</summary>
+    private void OnRedirected(AppActivationArguments args)
+    {
+        if (args is { Kind: ExtendedActivationKind.AppNotification, Data: AppNotificationActivatedEventArgs toast })
+            OnNotificationAction(this, NotificationService.ParseAction(toast));
+        else
+            ShowMainWindow();
     }
 
     private void OnMainWindowClosing(AppWindow sender, AppWindowClosingEventArgs args)

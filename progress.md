@@ -5,7 +5,7 @@ Tracks implementation status against [docs/PLAN.md](docs/PLAN.md). Update this f
 Legend: `[x]` done · `[~]` in progress · `[ ]` not started
 
 ## Status summary
-- **Current phase:** 5 — Persistence & single instance (next up; Phase 4 done)
+- **Current phase:** 6 — Polish (next up; Phase 5 done)
 - **Last updated:** 2026-10-30
 
 ## Phases
@@ -51,9 +51,12 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` not started
 - [ ] Toast button clicks (Postpone / Cancel on the toast itself): UIA can't reach toast buttons, so these need a manual click
 
 ### Phase 5 — Persistence & single instance
-- [ ] `JsonStateStore` (`%LOCALAPPDATA%\ScheduleShutdown\state.json`)
-- [ ] Restore schedule on launch (overdue rules)
-- [ ] Single-instance redirect
+- [x] `JsonStateStore` (Core, `Persistence/`): versioned camelCase JSON, enum names, atomic temp-file write, never throws (errors go to `app.log`); invalid/unknown files load as null + tests; 103 tests pass
+- [x] Restore schedule on launch (overdue rules) with an InfoBar per outcome (restored / overdue / stale discarded); overdue opens the 60 s countdown on top of the main window
+- [x] Single-instance redirect: custom `Program.Main` (`DISABLE_XAML_GENERATED_MAIN`), `AppInstance.FindOrRegisterForKey`, second launch redirects and exits; running instance shows its window (even from the tray) or applies a redirected toast action
+- [x] Toast clicked while the app isn't running: launch activation's action (Postpone / Cancel) is applied after restore
+- [x] Verified in dry run via UI Automation: kill + relaunch restores (same target), second launch exits with code 0 and brings the hidden window to the foreground, overdue restore shows countdown and Cancel clears the state, stale (13 h) discarded with InfoBar, corrupt file ignored and logged
+- [ ] Toast-launch activation (click a toast's Cancel after killing the app): needs a manual click, like Phase 4's toast buttons
 
 ### Phase 6 — Polish
 - [ ] App icon, theme, accessibility, validation, error InfoBars, settings page
@@ -76,6 +79,7 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` not started
 | 2026-10-30 | Phase 2 done: shutdown command + dry-run executor in Core (tested), process executor, factory and log in App; 63 tests pass, 0 warnings. |
 | 2026-10-30 | Phase 3 done: DI, main window/page, view model, formatter; verified schedule/postpone/cancel/due in dry run. 73 tests pass, 0 warnings. |
 | 2026-10-30 | Phase 4 done: toasts, final countdown window, tray icon/menu, close-to-tray, exit confirmation, DIP window sizing; verified in dry run. 84 tests pass, 0 warnings. Toast-button clicks still need a manual check. |
+| 2026-10-30 | Phase 5 done: `JsonStateStore` + tests, restore on launch with InfoBars, single-instance redirect via custom Main, separate dry-run state file; verified in dry run. 103 tests pass, 0 warnings. |
 
 ## Open questions / decisions
 - No WinUI CLI template is installed, so the App project files were written by hand. Add new pages/windows by copying the existing XAML + code-behind pattern.
@@ -89,13 +93,15 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` not started
 - Nothing calls `ShutdownExecutorFactory` yet: Phase 3 wires it (and the scheduler) into DI. The real executor has no automated test on purpose; it is only exercised in Phase 8.
 - Dry-run accepts `1` or `true`. The real executor is used for any other value, so always check the "(dry run)" window title before testing.
 - App project uses `LangVersion=preview`: CommunityToolkit.Mvvm 8.4 needs it for `[ObservableProperty]` partial properties (field-based ones raise WinRT AOT warnings). Partial properties can't have initializers, so set defaults in the constructor.
-- `IStateStore` is a temporary `InMemoryStateStore` in the App until Phase 5's `JsonStateStore`.
+- `JsonStateStore` lives in Core (pure `System.Text.Json` + file I/O), so it's unit-tested against a temp directory. The App passes the path.
+- Dry run uses **`state.dryrun.json`**, normal runs `state.json`: a schedule saved during development can never be restored by a normal launch and become a real shutdown.
+- Single-instance key is `ScheduleShutdown` for both dry-run and normal launches, so a dry-run launch while a normal instance runs just focuses that instance (check the "(dry run)" title).
+- Redirected activations arriving before `AppShell.Start` subscribes are dropped (only possible in the first moments of startup).
 - Exit from the tray with an active schedule **cancels** it (after confirmation), so Phase 5's restore never brings back a schedule the user exited out of. Only kill/crash leaves a saved schedule to restore.
 - Toasts show "ScheduleShutdown" (the exe name) as the app name, because `AppNotificationManager.Register()` has no display name or icon for unpackaged apps. Fix in Phase 6 with the app icon (`Register(displayName, iconUri)`).
 - Tray icon is a placeholder drawn with GDI+ shapes (`PlaceholderTrayIcon`). H.NotifyIcon's `GeneratedIconSource` didn't render the Segoe Fluent glyph. Replace with the real .ico in Phase 6.
 - H.NotifyIcon.WinUI is pinned to **2.3.2**: 2.4.x targets .NET 10 only. `ForceCreate(false)` keeps Efficiency Mode off (it would throttle the countdown timer).
 - Tray icon GUID comes from the exe path (`CreateUniqueGuidForProcessPath`), and stale icons with that GUID are deleted on start (`NIM_DELETE`).
-- A clicked toast when the app isn't running launches a new instance; Phase 5's single-instance redirect should route that activation to the running app.
 - `dotnet build` on the App **project** outputs to `bin\Debug\...`; the **solution** build outputs to `bin\x64\Debug\...`. Launch the exe matching the build you just ran.
 - UI-automation tests must not send keystrokes (`SendKeys {ESC}`): they land in the Claude Code terminal and interrupt the session. The tray menu is owner-drawn (no UIA items); click inside its `#32768` window rect instead.
 - PowerShell 5.1 `Get-Content` reads UTF-8 files as ANSI and mangles `·`/`–`. Edit source files with the Edit tool, not PowerShell string replacement.

@@ -102,12 +102,16 @@ public sealed class NotificationService(DispatcherQueue dispatcherQueue, AppLog 
         }
     }
 
+    /// <summary>What a toast click asks for. Also used for clicks that launched or reached the app as an activation.</summary>
+    public static NotificationAction ParseAction(AppNotificationActivatedEventArgs args) =>
+        args.Arguments.TryGetValue(ActionKey, out var value) && Enum.TryParse<NotificationAction>(value, out var parsed)
+            ? parsed
+            : NotificationAction.Open;
+
     /// <summary>Runs on a background thread.</summary>
     private void OnNotificationInvoked(AppNotificationManager sender, AppNotificationActivatedEventArgs args)
     {
-        var action = args.Arguments.TryGetValue(ActionKey, out var value) && Enum.TryParse<NotificationAction>(value, out var parsed)
-            ? parsed
-            : NotificationAction.Open;
+        var action = ParseAction(args);
         dispatcherQueue.TryEnqueue(() => ActionInvoked?.Invoke(this, action));
     }
 }

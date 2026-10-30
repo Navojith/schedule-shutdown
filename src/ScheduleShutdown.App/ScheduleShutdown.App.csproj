@@ -17,6 +17,8 @@
     <!-- Unpackaged app with the Windows App SDK runtime bundled, so users need no extra installs. -->
     <WindowsPackageType>None</WindowsPackageType>
     <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <!-- Program.cs has its own Main for the single-instance redirect. -->
+    <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

@@ -5,6 +5,7 @@ using ScheduleShutdown.App.Services;
 using ScheduleShutdown.App.ViewModels;
 using ScheduleShutdown.Core.Abstractions;
 using ScheduleShutdown.Core.Execution;
+using ScheduleShutdown.Core.Persistence;
 using ScheduleShutdown.Core.Scheduling;
 
 namespace ScheduleShutdown.App;
@@ -36,12 +37,25 @@ public partial class App : Application
         services.AddSingleton<IClock, SystemClock>();
         services.AddSingleton<ITimerFactory>(new DispatcherQueueTimerFactory(dispatcherQueue));
         services.AddSingleton(sp => ShutdownExecutorFactory.Create(sp.GetRequiredService<AppLog>()));
-        services.AddSingleton<IStateStore, InMemoryStateStore>();
+        services.AddSingleton<IStateStore>(sp => CreateStateStore(sp.GetRequiredService<AppEnvironment>(), sp.GetRequiredService<AppLog>()));
         services.AddSingleton<ShutdownScheduler>();
         services.AddSingleton<MainViewModel>();
         services.AddSingleton(sp => new NotificationService(dispatcherQueue, sp.GetRequiredService<AppLog>()));
         services.AddSingleton<TrayIconService>();
         services.AddSingleton<AppShell>();
         return services.BuildServiceProvider();
+    }
+
+    /// <summary>
+    /// Dry run keeps its own file, so a schedule saved during development is never restored by a normal
+    /// launch and turned into a real shutdown.
+    /// </summary>
+    private static JsonStateStore CreateStateStore(AppEnvironment environment, AppLog log)
+    {
+        var path = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "ScheduleShutdown",
+            environment.IsDryRun ? "state.dryrun.json" : "state.json");
+        return new JsonStateStore(path, log.Write);
     }
 }
