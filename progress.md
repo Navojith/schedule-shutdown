@@ -5,7 +5,7 @@ Tracks implementation status against [docs/PLAN.md](docs/PLAN.md). Update this f
 Legend: `[x]` done · `[~]` in progress · `[ ]` not started
 
 ## Status summary
-- **Current phase:** 7 — Installer (MSI built and verified on this PC; clean-VM and upgrade checks open). Phase 6 manual QA items also still open.
+- **Current phase:** 8 done — all phases built and verified. Open: small-screen window overflow (QA 4.9), Phase 6 manual QA items, SmartScreen (7.10), Settings-UI uninstall click-through (7.7).
 - **Last updated:** 2026-10-30
 
 ## Phases
@@ -72,11 +72,13 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` not started
 - [x] Per-machine install to `Program Files\Schedule Shutdown`, Start-menu shortcut, ARP icon, version bound from the exe, MajorUpgrade, WixUI_InstallDir without the license page, "Launch" checkbox on the last page
 - [x] Uninstall/upgrade end the running app first (`taskkill` before `InstallValidate`); user data kept unless `REMOVEDATA=1`; `MSIFASTINSTALL=1` skips the restore point
 - [x] Verified on this PC: UI pages via UIA, install (528 files, shortcut, Apps entry), installed exe runs in dry run, uninstall while running, `REMOVEDATA=1`
-- [ ] Install/uninstall on a clean Windows 11 VM / Windows Sandbox, upgrade over an older version, and the other ⬜ items in `docs/QA.md` §7
+- [x] Clean Windows 11 Home VM (VirtualBox, no .NET): install, Start-menu launch + toast identity, upgrade 1.0.0 → 1.0.1 while running, uninstall while running (QA 7.4, 7.5, 7.7 via `UninstallString`, 7.8, 7.9)
+- [ ] SmartScreen on a web-downloaded MSI (7.10); uninstall clicked through Settings → Apps (7.7 UI path)
 
 ### Phase 8 — Real-shutdown test
-- [ ] Normal shutdown (blocked by unsaved Notepad as expected)
-- [ ] Force shutdown succeeds
+- [x] Normal shutdown: `shutdown.exe /s /t 0` ran at the target second; a blocker app (unsaved work) stopped it with Windows' "Closing 1 app" screen and the VM stayed on. Modern Notepad doesn't block (it keeps unsaved tabs).
+- [x] Force shutdown: `shutdown.exe /s /t 0 /f` ran on time and the VM powered off within 8 s despite the blocker
+- [ ] Fix: main window overflows a 1024 × 768 screen at 125 % (QA 4.9): Schedule button off screen
 
 ## Session log
 | Date | Summary |
@@ -90,6 +92,7 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` not started
 | 2026-10-30 | Phase 5 done: `JsonStateStore` + tests, restore on launch with InfoBars, single-instance redirect via custom Main, separate dry-run state file; verified in dry run. 103 tests pass, 0 warnings. |
 | 2026-10-30 | Phase 6 built: icon + generator, settings page (theme, about), TitleBar navigation, theme service, accessibility names, min window size, QA checklist; verified in dry run. 113 tests pass, 0 warnings. Manual QA items still open. |
 | 2026-10-30 | Phase 7 built: WiX v5 MSI (per-machine, shortcut, launch checkbox, kill-before-validate, `REMOVEDATA`); install/uninstall verified on this PC. First uninstall attempt hung on a Restart Manager "files in use" prompt; fixed. Clean-VM and upgrade checks open. |
+| 2026-10-30 | Phase 7 VM checks + Phase 8 done in a VirtualBox Win11 Home VM (unattended install; VBoxSVGA showed a black screen, VMSVGA fixed it; live snapshots hang on top of Hyper-V, offline ones work). Clean install/upgrade/uninstall pass; real normal shutdown blocked as expected, forced shutdown powered the VM off. Found: window overflows small screens. |
 
 ## Open questions / decisions
 - No WinUI CLI template is installed, so the App project files were written by hand. Add new pages/windows by copying the existing XAML + code-behind pattern.
@@ -121,4 +124,5 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` not started
 - `REMOVEDATA=1` removes `%LOCALAPPDATA%\ScheduleShutdown` only for the user running the uninstall. Toast registration left by `AppNotificationManager.Register` under HKCU isn't cleaned up by the MSI.
 - MSI `UpgradeCode` is `8B3A9ABE-6315-42E3-A2EC-317959024A93`: never change it. Bump `<Version>` in the App csproj for each release (the MSI version is bound from the exe).
 - WiX CLI 5.0.2 installed as a global dotnet tool (only needed for ad-hoc `wix` commands; the build uses the SDK package). MSI dialog buttons have no UIA Invoke pattern: click them with `PostMessage(hwnd, BM_CLICK)`.
+- Test VM: VirtualBox 7.2.22, VM `SchedShutdownTest` (Win11 Home, user `tester` / `test1234`, built-in Administrator enabled with the same password, snapshot `clean-win11` = before any install). `guestcontrol` runs non-elevated as tester, so elevated steps run as `Administrator`; desktop/UI steps run through a scheduled task in tester's session. Use the VMSVGA graphics controller, and take snapshots only while the VM is off.
 - PowerShell 5.1 `Get-Content` reads UTF-8 files as ANSI and mangles `·`/`–`. Edit source files with the Edit tool, not PowerShell string replacement.
