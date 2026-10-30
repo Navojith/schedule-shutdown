@@ -5,7 +5,7 @@ Tracks implementation status against [docs/PLAN.md](docs/PLAN.md). Update this f
 Legend: `[x]` done · `[~]` in progress · `[ ]` not started
 
 ## Status summary
-- **Current phase:** 2 — Shutdown executor (next up; Phase 1 done)
+- **Current phase:** 3 — Main UI (next up; Phase 2 done)
 - **Last updated:** 2026-10-30
 
 ## Phases
@@ -26,8 +26,10 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` not started
 - [x] `ShutdownScheduler` (tick, warnings, final countdown, due, cancel, postpone, overdue, restore) + tests (49 tests passing)
 
 ### Phase 2 — Shutdown executor
-- [ ] `ProcessShutdownExecutor` (normal / `/f` force)
-- [ ] Dry-run executor via `SCHEDULE_SHUTDOWN_DRYRUN=1`
+- [x] `ShutdownCommand` (Core): `System32\shutdown.exe /s /t 0` (+ `/f`) + tests
+- [x] `ProcessShutdownExecutor` (App): no window, waits up to 10 s, throws on non-zero exit code
+- [x] `DryRunShutdownExecutor` (Core) + `DryRunMode` env-var check + tests; `ShutdownExecutorFactory` (App) picks one; window title shows "(dry run)"
+- [x] `AppLog`: `%LOCALAPPDATA%\ScheduleShutdown\app.log` + debug output (dry-run commands land here)
 
 ### Phase 3 — Main UI
 - [ ] MainWindow with Mica + custom title bar
@@ -63,6 +65,7 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` not started
 | 2026-10-30 | Planning: wrote PLAN.md, CLAUDE.md, progress.md. Picked C# / .NET 9 / WinUI 3 / WiX v5. |
 | 2026-10-30 | Phase 0 done: git repo, solution, 3 projects, hand-written WinUI 3 csproj, verified build + launch. |
 | 2026-10-30 | Phase 1 done: Core models, abstractions, `ScheduleCalculator`, `ShutdownScheduler`, test fakes; 49 tests pass, 0 warnings. |
+| 2026-10-30 | Phase 2 done: shutdown command + dry-run executor in Core (tested), process executor, factory and log in App; 63 tests pass, 0 warnings. |
 
 ## Open questions / decisions
 - No WinUI CLI template is installed, so the App project files were written by hand. Add new pages/windows by copying the existing XAML + code-behind pattern.
@@ -73,3 +76,5 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` not started
 - Warnings: thresholds at or above the remaining time when scheduling/postponing never fire. After a sleep that crosses several thresholds, only the smallest one fires.
 - Max lead time is 7 days in both modes; min timer is 1 min. Postpone resets warnings and leaves the final countdown.
 - `ShutdownScheduler.Evaluate()` is public so the App can call it on resume from sleep (Phase 4/5).
+- Nothing calls `ShutdownExecutorFactory` yet: Phase 3 wires it (and the scheduler) into DI. The real executor has no automated test on purpose; it is only exercised in Phase 8.
+- Dry-run accepts `1` or `true`. The real executor is used for any other value, so always check the "(dry run)" window title before testing.
