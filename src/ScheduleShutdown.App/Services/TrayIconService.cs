@@ -1,11 +1,9 @@
+using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Windows.Input;
 using H.NotifyIcon;
 using H.NotifyIcon.Core;
-using Microsoft.UI;
-using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Windows.UI;
 
 namespace ScheduleShutdown.App.Services;
 
@@ -23,10 +21,6 @@ public sealed class TrayIconService : IDisposable
         menu.Items.Add(new MenuFlyoutSeparator());
         menu.Items.Add(new MenuFlyoutItem { Text = "Exit", Command = exit });
 
-        var accent = Application.Current.Resources.TryGetValue("SystemAccentColor", out var value) && value is Color color
-            ? color
-            : Colors.SteelBlue;
-
         // Windows ties the icon GUID to the exe path, so derive it from the path.
         var id = TrayIcon.CreateUniqueGuidForProcessPath();
         RemoveStaleIcon(id);
@@ -36,7 +30,7 @@ public sealed class TrayIconService : IDisposable
         {
             Id = id,
             ToolTipText = toolTip,
-            Icon = PlaceholderTrayIcon.Create(accent),
+            Icon = LoadIcon(),
             ContextMenuMode = ContextMenuMode.PopupMenu,
             ContextFlyout = menu,
             LeftClickCommand = open,
@@ -45,6 +39,13 @@ public sealed class TrayIconService : IDisposable
 
         // Efficiency Mode would throttle the countdown timer, so keep it off.
         _icon.ForceCreate(false);
+    }
+
+    /// <summary>The app icon at the notification area's size, so Windows doesn't scale a larger frame down.</summary>
+    private static Icon LoadIcon()
+    {
+        var size = GetSystemMetrics(SmCxSmIcon);
+        return new Icon(AppAssets.IconPath, size > 0 ? size : 16, size > 0 ? size : 16);
     }
 
     public void SetToolTip(string toolTip)
@@ -77,6 +78,7 @@ public sealed class TrayIconService : IDisposable
         Shell_NotifyIconW(NimDelete, ref data);
     }
 
+    private const int SmCxSmIcon = 49;
     private const uint NimDelete = 0x2;
     private const uint NifGuid = 0x20;
 
@@ -99,6 +101,9 @@ public sealed class TrayIconService : IDisposable
         public Guid GuidItem;
         public nint BalloonIcon;
     }
+
+    [DllImport("user32.dll")]
+    private static extern int GetSystemMetrics(int index);
 
     [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
     [return: MarshalAs(UnmanagedType.Bool)]

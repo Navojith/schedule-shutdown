@@ -24,7 +24,8 @@ src/ScheduleShutdown.Core/        scheduling logic: pure .NET, no UI, no Windows
 src/ScheduleShutdown.App/         WinUI 3 app: Views, ViewModels, Services
 tests/ScheduleShutdown.Core.Tests xUnit tests for Core
 installer/ScheduleShutdown.Installer  WiX MSI project
-docs/PLAN.md
+tools/make-icon.ps1               regenerates the app icon (Assets/AppIcon.ico + .png)
+docs/PLAN.md, docs/QA.md          plan; manual QA checklist
 ```
 
 ## Commands

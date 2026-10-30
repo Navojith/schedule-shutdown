@@ -3,7 +3,8 @@
     x:Class="ScheduleShutdown.App.Views.MainPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    Background="Transparent">
+    Background="Transparent"
+    NavigationCacheMode="Required">
 
     <Grid>
         <Grid.RowDefinitions>
@@ -14,16 +15,19 @@
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel Padding="24,4,24,16" Spacing="16">
 
+                <!-- A closed InfoBar keeps its slot (and the panel spacing), so each is also collapsed while closed. -->
                 <InfoBar
                     Title="Can't schedule"
                     IsOpen="{x:Bind ViewModel.IsErrorOpen, Mode=TwoWay}"
                     Message="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
-                    Severity="Error" />
+                    Severity="Error"
+                    Visibility="{x:Bind ViewModel.IsErrorOpen, Mode=OneWay}" />
 
                 <InfoBar
                     IsOpen="{x:Bind ViewModel.IsInfoOpen, Mode=TwoWay}"
                     Message="{x:Bind ViewModel.InfoMessage, Mode=OneWay}"
-                    Severity="Informational" />
+                    Severity="Informational"
+                    Visibility="{x:Bind ViewModel.IsInfoOpen, Mode=OneWay}" />
 
                 <!-- Schedule form -->
                 <StackPanel Spacing="16" Visibility="{x:Bind ViewModel.IsFormVisible, Mode=OneWay}">
@@ -68,15 +72,33 @@
                                 Value="{x:Bind ViewModel.TimerMinutes, Mode=TwoWay}" />
                         </Grid>
                         <StackPanel Orientation="Horizontal" Spacing="8">
-                            <Button Command="{x:Bind ViewModel.ApplyPresetCommand}" CommandParameter="15" Content="15 min" />
-                            <Button Command="{x:Bind ViewModel.ApplyPresetCommand}" CommandParameter="30" Content="30 min" />
-                            <Button Command="{x:Bind ViewModel.ApplyPresetCommand}" CommandParameter="60" Content="1 h" />
-                            <Button Command="{x:Bind ViewModel.ApplyPresetCommand}" CommandParameter="120" Content="2 h" />
+                            <Button
+                                AutomationProperties.Name="Set timer to 15 minutes"
+                                Command="{x:Bind ViewModel.ApplyPresetCommand}"
+                                CommandParameter="15"
+                                Content="15 min" />
+                            <Button
+                                AutomationProperties.Name="Set timer to 30 minutes"
+                                Command="{x:Bind ViewModel.ApplyPresetCommand}"
+                                CommandParameter="30"
+                                Content="30 min" />
+                            <Button
+                                AutomationProperties.Name="Set timer to 1 hour"
+                                Command="{x:Bind ViewModel.ApplyPresetCommand}"
+                                CommandParameter="60"
+                                Content="1 h" />
+                            <Button
+                                AutomationProperties.Name="Set timer to 2 hours"
+                                Command="{x:Bind ViewModel.ApplyPresetCommand}"
+                                CommandParameter="120"
+                                Content="2 h" />
                         </StackPanel>
                     </StackPanel>
 
                     <StackPanel Spacing="8">
+                        <!-- Explicit name: by default it would be "Force shutdown Off", with the state read twice. -->
                         <ToggleSwitch
+                            AutomationProperties.Name="Force shutdown"
                             Header="Force shutdown"
                             IsOn="{x:Bind ViewModel.Force, Mode=TwoWay}"
                             OffContent="Off"
@@ -90,7 +112,8 @@
                             IsClosable="False"
                             IsOpen="{x:Bind ViewModel.Force, Mode=OneWay}"
                             Message="Unsaved work will be lost."
-                            Severity="Warning" />
+                            Severity="Warning"
+                            Visibility="{x:Bind ViewModel.Force, Mode=OneWay}" />
                     </StackPanel>
                 </StackPanel>
 
@@ -126,7 +149,10 @@
                         HorizontalAlignment="Center"
                         Orientation="Horizontal"
                         Spacing="8">
-                        <Button Command="{x:Bind ViewModel.PostponeCommand}" Content="+10 min" />
+                        <Button
+                            AutomationProperties.Name="Postpone 10 minutes"
+                            Command="{x:Bind ViewModel.PostponeCommand}"
+                            Content="+10 min" />
                         <Button Command="{x:Bind ViewModel.CancelCommand}" Content="Cancel shutdown" />
                     </StackPanel>
                 </StackPanel>

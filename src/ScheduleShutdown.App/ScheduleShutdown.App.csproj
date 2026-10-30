@@ -8,6 +8,9 @@
     <RootNamespace>ScheduleShutdown.App</RootNamespace>
     <AssemblyName>ScheduleShutdown</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>
+    <Version>1.0.0</Version>
+    <Product>Schedule Shutdown</Product>
     <Platforms>x64</Platforms>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <UseWinUI>true</UseWinUI>
@@ -20,6 +23,11 @@
     <!-- Program.cs has its own Main for the single-instance redirect. -->
     <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Loaded by file path (window, tray and toast icons); regenerate with tools/make-icon.ps1. -->
+    <Content Include="Assets\AppIcon.ico;Assets\AppIcon.png" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\ScheduleShutdown.Core\ScheduleShutdown.Core.csproj" />

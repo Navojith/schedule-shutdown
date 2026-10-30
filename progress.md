@@ -5,7 +5,7 @@ Tracks implementation status against [docs/PLAN.md](docs/PLAN.md). Update this f
 Legend: `[x]` done · `[~]` in progress · `[ ]` not started
 
 ## Status summary
-- **Current phase:** 6 — Polish (next up; Phase 5 done)
+- **Current phase:** 6 — Polish (built and checked in dry run; waiting on the manual items in `docs/QA.md`)
 - **Last updated:** 2026-10-30
 
 ## Phases
@@ -59,8 +59,13 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` not started
 - [ ] Toast-launch activation (click a toast's Cancel after killing the app): needs a manual click, like Phase 4's toast buttons
 
 ### Phase 6 — Polish
-- [ ] App icon, theme, accessibility, validation, error InfoBars, settings page
-- [ ] Manual QA checklist written and passed
+- [x] App icon: `tools/make-icon.ps1` generates `Assets/AppIcon.ico` (16–64 px DIB + 256 px PNG) and `AppIcon.png`; used for the exe, window title bars, tray (placeholder removed) and toasts (`Register(displayName, iconUri)`)
+- [x] Theme: `AppSettings` + `JsonSettingsStore` (Core, tested; shared `JsonFile` helper with `JsonStateStore`); `ThemeService` applies System/Light/Dark to all windows (content + caption buttons via `TitleBar.PreferredTheme`)
+- [x] Settings page: theme, About (version 1.0.0), log folder; WinUI `TitleBar` with gear + back button and "Dry run" subtitle, `Frame` navigation
+- [x] Accessibility: explicit names for presets, +10 min, force toggle (was "Force shutdown Off"); headings on Settings; decorative images hidden from UIA
+- [x] Layout: closed InfoBars collapsed (removed the gap above the form); minimum window size 460 × 620 DIPs
+- [x] Manual QA checklist written (`docs/QA.md`); automatable items checked in dry run; 113 tests pass
+- [ ] Manual QA items marked ⬜ in `docs/QA.md` (toast buttons, keyboard, Narrator, high contrast, 150 % / multi-monitor, sleep/resume, theme restart)
 
 ### Phase 7 — Installer
 - [ ] WiX v5 MSI project
@@ -80,6 +85,7 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` not started
 | 2026-10-30 | Phase 3 done: DI, main window/page, view model, formatter; verified schedule/postpone/cancel/due in dry run. 73 tests pass, 0 warnings. |
 | 2026-10-30 | Phase 4 done: toasts, final countdown window, tray icon/menu, close-to-tray, exit confirmation, DIP window sizing; verified in dry run. 84 tests pass, 0 warnings. Toast-button clicks still need a manual check. |
 | 2026-10-30 | Phase 5 done: `JsonStateStore` + tests, restore on launch with InfoBars, single-instance redirect via custom Main, separate dry-run state file; verified in dry run. 103 tests pass, 0 warnings. |
+| 2026-10-30 | Phase 6 built: icon + generator, settings page (theme, about), TitleBar navigation, theme service, accessibility names, min window size, QA checklist; verified in dry run. 113 tests pass, 0 warnings. Manual QA items still open. |
 
 ## Open questions / decisions
 - No WinUI CLI template is installed, so the App project files were written by hand. Add new pages/windows by copying the existing XAML + code-behind pattern.
@@ -98,8 +104,10 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` not started
 - Single-instance key is `ScheduleShutdown` for both dry-run and normal launches, so a dry-run launch while a normal instance runs just focuses that instance (check the "(dry run)" title).
 - Redirected activations arriving before `AppShell.Start` subscribes are dropped (only possible in the first moments of startup).
 - Exit from the tray with an active schedule **cancels** it (after confirmation), so Phase 5's restore never brings back a schedule the user exited out of. Only kill/crash leaves a saved schedule to restore.
-- Toasts show "ScheduleShutdown" (the exe name) as the app name, because `AppNotificationManager.Register()` has no display name or icon for unpackaged apps. Fix in Phase 6 with the app icon (`Register(displayName, iconUri)`).
-- Tray icon is a placeholder drawn with GDI+ shapes (`PlaceholderTrayIcon`). H.NotifyIcon's `GeneratedIconSource` didn't render the Segoe Fluent glyph. Replace with the real .ico in Phase 6.
+- Toast name/icon come from `Register(displayName, iconUri)`. Windows caches them per notification identity, which comes from the exe path: the dev build path still shows the old "ScheduleShutdown" header, while a fresh path (and the installed app) shows "Schedule Shutdown" + icon.
+- ICO entries below 256 px must be BMP/DIB, not PNG: `System.Drawing.Icon` (used for the tray) shows PNG entries as noise.
+- Settings live in `settings.json`, shared by dry-run and normal runs. The page has only the theme and About for now: launch at startup and other actions are v1.x nice-to-haves in PLAN.
+- `OverlappedPresenter.PreferredMinimumWidth/Height` take physical pixels; `WindowSizing.SetMinimumSize` converts from DIPs.
 - H.NotifyIcon.WinUI is pinned to **2.3.2**: 2.4.x targets .NET 10 only. `ForceCreate(false)` keeps Efficiency Mode off (it would throttle the countdown timer).
 - Tray icon GUID comes from the exe path (`CreateUniqueGuidForProcessPath`), and stale icons with that GUID are deleted on start (`NIM_DELETE`).
 - `dotnet build` on the App **project** outputs to `bin\Debug\...`; the **solution** build outputs to `bin\x64\Debug\...`. Launch the exe matching the build you just ran.

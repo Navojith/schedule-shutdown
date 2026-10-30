@@ -26,6 +26,9 @@ public partial class App : Application
         var environment = Services.GetRequiredService<AppEnvironment>();
         Services.GetRequiredService<AppLog>().Write(environment.IsDryRun ? "Started (dry run)" : "Started");
 
+        var settings = Services.GetRequiredService<JsonSettingsStore>().Load();
+        Services.GetRequiredService<ThemeService>().SetTheme(settings.Theme);
+
         Services.GetRequiredService<AppShell>().Start();
     }
 
@@ -39,7 +42,10 @@ public partial class App : Application
         services.AddSingleton(sp => ShutdownExecutorFactory.Create(sp.GetRequiredService<AppLog>()));
         services.AddSingleton<IStateStore>(sp => CreateStateStore(sp.GetRequiredService<AppEnvironment>(), sp.GetRequiredService<AppLog>()));
         services.AddSingleton<ShutdownScheduler>();
+        services.AddSingleton(sp => new JsonSettingsStore(DataPath("settings.json"), sp.GetRequiredService<AppLog>().Write));
+        services.AddSingleton<ThemeService>();
         services.AddSingleton<MainViewModel>();
+        services.AddSingleton<SettingsViewModel>();
         services.AddSingleton(sp => new NotificationService(dispatcherQueue, sp.GetRequiredService<AppLog>()));
         services.AddSingleton<TrayIconService>();
         services.AddSingleton<AppShell>();
@@ -50,12 +56,9 @@ public partial class App : Application
     /// Dry run keeps its own file, so a schedule saved during development is never restored by a normal
     /// launch and turned into a real shutdown.
     /// </summary>
-    private static JsonStateStore CreateStateStore(AppEnvironment environment, AppLog log)
-    {
-        var path = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "ScheduleShutdown",
-            environment.IsDryRun ? "state.dryrun.json" : "state.json");
-        return new JsonStateStore(path, log.Write);
-    }
+    private static JsonStateStore CreateStateStore(AppEnvironment environment, AppLog log) =>
+        new(DataPath(environment.IsDryRun ? "state.dryrun.json" : "state.json"), log.Write);
+
+    private static string DataPath(string fileName) =>
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ScheduleShutdown", fileName);
 }

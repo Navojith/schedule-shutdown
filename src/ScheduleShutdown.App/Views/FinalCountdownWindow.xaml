@@ -18,7 +18,11 @@
 
         <Grid x:Name="AppTitleBar" Height="32" Padding="16,0,0,0">
             <StackPanel VerticalAlignment="Center" Orientation="Horizontal" Spacing="12">
-                <FontIcon FontSize="14" Glyph="&#xE7E8;" />
+                <Image
+                    x:Name="TitleIcon"
+                    Width="16"
+                    Height="16"
+                    AutomationProperties.AccessibilityView="Raw" />
                 <TextBlock
                     VerticalAlignment="Center"
                     Style="{StaticResource CaptionTextBlockStyle}"

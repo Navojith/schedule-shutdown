@@ -22,6 +22,7 @@ public sealed class AppShell(
     MainViewModel mainViewModel,
     NotificationService notifications,
     TrayIconService tray,
+    ThemeService theme,
     AppEnvironment environment,
     AppLog log)
 {
@@ -37,6 +38,7 @@ public sealed class AppShell(
         notifications.Register();
 
         _mainWindow = new MainWindow(environment);
+        theme.Attach(_mainWindow);
         _mainWindow.AppWindow.Closing += OnMainWindowClosing;
 
         tray.Create(ToolTip(), new RelayCommand(ShowMainWindow), mainViewModel.CancelCommand, new RelayCommand(RequestExit));
@@ -132,6 +134,7 @@ public sealed class AppShell(
 
         _countdownWindow = new FinalCountdownWindow(new CountdownViewModel(scheduler, mainViewModel));
         _countdownWindow.Closed += (_, _) => _countdownWindow = null;
+        theme.Attach(_countdownWindow);
         _countdownWindow.Activate();
     }
 

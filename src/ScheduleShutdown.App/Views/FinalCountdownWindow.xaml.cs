@@ -1,5 +1,6 @@
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Media.Imaging;
 using ScheduleShutdown.App.Services;
 using ScheduleShutdown.App.ViewModels;
 
@@ -13,6 +14,7 @@ public sealed partial class FinalCountdownWindow : Window
         ViewModel = viewModel;
         InitializeComponent();
 
+        TitleIcon.Source = new BitmapImage(new Uri(AppAssets.IconPngPath));
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
 

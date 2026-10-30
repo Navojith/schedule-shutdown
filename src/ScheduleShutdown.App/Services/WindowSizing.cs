@@ -14,6 +14,17 @@ public static class WindowSizing
         window.AppWindow.Resize(new SizeInt32((int)Math.Round(width * scale), (int)Math.Round(height * scale)));
     }
 
+    /// <summary>Stops the user from resizing below a size in DIPs.</summary>
+    public static void SetMinimumSize(Window window, int width, int height)
+    {
+        if (window.AppWindow.Presenter is not OverlappedPresenter presenter)
+            return;
+
+        var scale = Scale(window);
+        presenter.PreferredMinimumWidth = (int)Math.Round(width * scale);
+        presenter.PreferredMinimumHeight = (int)Math.Round(height * scale);
+    }
+
     /// <summary>Centres the window in the work area of the display it's on.</summary>
     public static void Center(Window window)
     {

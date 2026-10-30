@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="ScheduleShutdown.App.Views.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Background="Transparent">
+
+    <Page.Resources>
+        <!-- Settings-card look, built from theme resources so it follows light/dark and high contrast. -->
+        <Style x:Key="CardStyle" TargetType="Border">
+            <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+            <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="{StaticResource OverlayCornerRadius}" />
+            <Setter Property="Padding" Value="16" />
+        </Style>
+        <Style
+            x:Key="SectionHeaderStyle"
+            BasedOn="{StaticResource BodyStrongTextBlockStyle}"
+            TargetType="TextBlock">
+            <Setter Property="Margin" Value="0,12,0,0" />
+        </Style>
+    </Page.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Padding="24,4,24,24" Spacing="8">
+            <TextBlock
+                Margin="0,0,0,4"
+                AutomationProperties.HeadingLevel="Level1"
+                Style="{StaticResource SubtitleTextBlockStyle}"
+                Text="Settings" />
+
+            <TextBlock
+                AutomationProperties.HeadingLevel="Level2"
+                Style="{StaticResource SectionHeaderStyle}"
+                Text="Appearance" />
+            <Border Style="{StaticResource CardStyle}">
+                <Grid ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <FontIcon VerticalAlignment="Center" Glyph="&#xE790;" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock x:Name="ThemeLabel" Text="App theme" />
+                        <TextBlock
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Text="Light, dark, or follow Windows"
+                            TextWrapping="Wrap" />
+                    </StackPanel>
+                    <ComboBox
+                        Grid.Column="2"
+                        MinWidth="120"
+                        VerticalAlignment="Center"
+                        AutomationProperties.LabeledBy="{x:Bind ThemeLabel}"
+                        SelectedIndex="{x:Bind ViewModel.ThemeIndex, Mode=TwoWay}">
+                        <x:String>Use system setting</x:String>
+                        <x:String>Light</x:String>
+                        <x:String>Dark</x:String>
+                    </ComboBox>
+                </Grid>
+            </Border>
+
+            <TextBlock
+                AutomationProperties.HeadingLevel="Level2"
+                Style="{StaticResource SectionHeaderStyle}"
+                Text="About" />
+            <Border Style="{StaticResource CardStyle}">
+                <Grid ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Image
+                        x:Name="AppIconImage"
+                        Width="32"
+                        Height="32"
+                        VerticalAlignment="Center"
+                        AutomationProperties.AccessibilityView="Raw" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="Schedule Shutdown" />
+                        <TextBlock
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Text="{x:Bind ViewModel.VersionText}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+            <Border Style="{StaticResource CardStyle}">
+                <Grid ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <FontIcon VerticalAlignment="Center" Glyph="&#xE8B7;" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="Log and saved schedule" />
+                        <TextBlock
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            IsTextSelectionEnabled="True"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Text="{x:Bind ViewModel.DataFolder}"
+                            TextWrapping="Wrap" />
+                    </StackPanel>
+                    <Button
+                        Grid.Column="2"
+                        VerticalAlignment="Center"
+                        AutomationProperties.Name="Open log folder"
+                        Command="{x:Bind ViewModel.OpenDataFolderCommand}"
+                        Content="Open" />
+                </Grid>
+            </Border>
+
+            <InfoBar
+                Margin="0,8,0,0"
+                IsClosable="False"
+                IsOpen="{x:Bind ViewModel.IsDryRun}"
+                Message="Shutdown commands are written to app.log instead of being run."
+                Severity="Warning"
+                Title="Dry run" />
+        </StackPanel>
+    </ScrollViewer>
+</Page>

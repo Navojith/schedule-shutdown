@@ -31,7 +31,8 @@ public sealed class NotificationService(DispatcherQueue dispatcherQueue, AppLog 
         {
             var manager = AppNotificationManager.Default;
             manager.NotificationInvoked += OnNotificationInvoked;
-            manager.Register();
+            // Unpackaged apps have no manifest, so the toast header's name and icon come from here.
+            manager.Register(AppAssets.DisplayName, new Uri(AppAssets.IconPngPath));
             _registered = true;
         }
         catch (Exception ex)
