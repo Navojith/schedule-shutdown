@@ -1,0 +1,88 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+
+  <!-- Version comes from the published exe (<Version> in the App csproj). Never change UpgradeCode. -->
+  <Package Name="Schedule Shutdown"
+           Manufacturer="Navojith"
+           Version="!(bind.FileVersion.ScheduleShutdownExe)"
+           UpgradeCode="8B3A9ABE-6315-42E3-A2EC-317959024A93"
+           Scope="perMachine">
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <Icon Id="AppIcon.ico" SourceFile="$(var.AppAssetsDir)AppIcon.ico" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon.ico" />
+    <!-- Skips the System Restore point, which took about a minute per install/uninstall. -->
+    <Property Id="MSIFASTINSTALL" Value="1" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="Schedule Shutdown" />
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder" />
+
+    <Feature Id="Main">
+      <ComponentGroupRef Id="AppFiles" />
+      <ComponentRef Id="UserData" />
+    </Feature>
+
+    <ComponentGroup Id="AppFiles" Directory="INSTALLFOLDER">
+      <Component>
+        <File Id="ScheduleShutdownExe" Source="$(var.AppPublishDir)ScheduleShutdown.exe" KeyPath="yes">
+          <Shortcut Id="StartMenuShortcut"
+                    Directory="ProgramMenuFolder"
+                    Name="Schedule Shutdown"
+                    Description="Shut down the PC at a set time or after a timer"
+                    WorkingDirectory="INSTALLFOLDER"
+                    Advertise="no" />
+        </File>
+      </Component>
+      <Files Include="$(var.AppPublishDir)**">
+        <Exclude Files="$(var.AppPublishDir)ScheduleShutdown.exe" />
+      </Files>
+    </ComponentGroup>
+
+    <!--
+      The tray app ignores WM_CLOSE (it hides to the tray), so uninstall and upgrade end it outright.
+      It must go before InstallValidate: otherwise Restart Manager finds it there and waits on a
+      "files in use" prompt. Runs as the user (the app's own account), so no elevation is needed.
+      Not on a first install: that would also kill a dev or portable copy with the same exe name.
+    -->
+    <SetProperty Id="WixQuietExecCmdLine"
+                 Value="&quot;[System64Folder]taskkill.exe&quot; /F /IM ScheduleShutdown.exe"
+                 Before="CloseRunningApp"
+                 Sequence="execute"
+                 Condition="Installed OR WIX_UPGRADE_DETECTED" />
+    <CustomAction Id="CloseRunningApp" BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)" DllEntry="WixQuietExec" Execute="immediate" Return="ignore" />
+    <InstallExecuteSequence>
+      <Custom Action="CloseRunningApp" Before="InstallValidate" Condition="Installed OR WIX_UPGRADE_DETECTED" />
+    </InstallExecuteSequence>
+
+    <!--
+      State and settings are per user, in %LOCALAPPDATA%\ScheduleShutdown. They're kept on uninstall unless
+      REMOVEDATA=1 is passed (msiexec /x ScheduleShutdown-x64.msi REMOVEDATA=1), which deletes them for
+      the user running the uninstall.
+    -->
+    <Property Id="REMOVEDATA" Secure="yes" />
+    <SetProperty Id="USERDATAFOLDER" Value="[LocalAppDataFolder]ScheduleShutdown" Before="CostInitialize" Sequence="execute" Condition="REMOVEDATA = 1" />
+    <Component Id="UserData" Directory="INSTALLFOLDER">
+      <RegistryValue Root="HKLM" Key="Software\Schedule Shutdown" Name="InstallFolder" Value="[INSTALLFOLDER]" Type="string" KeyPath="yes" />
+      <util:RemoveFolderEx Property="USERDATAFOLDER" On="uninstall" Condition="REMOVEDATA = 1" />
+    </Component>
+
+    <!-- Launch checkbox on the last page; runs as the user, not elevated. -->
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Launch Schedule Shutdown" />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="1" />
+    <Property Id="WixShellExecTarget" Value="[#ScheduleShutdownExe]" />
+    <CustomAction Id="LaunchApp" BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)" DllEntry="WixShellExec" Impersonate="yes" />
+
+    <UI>
+      <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
+      <!-- No license page: Welcome goes straight to the folder page and back. -->
+      <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="InstallDirDlg" Order="2" Condition="NOT Installed" />
+      <Publish Dialog="InstallDirDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" Order="2" />
+      <Publish Dialog="ExitDialog" Control="Finish" Event="DoAction" Value="LaunchApp" Condition="WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 AND NOT Installed" />
+    </UI>
+  </Package>
+</Wix>

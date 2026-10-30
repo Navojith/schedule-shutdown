@@ -76,6 +76,22 @@ Status: ✅ passed · ❌ failed · ⬜ not run yet. "Auto" means checked throug
 | 6.7 | High contrast theme (Settings → Accessibility → Contrast themes) | Everything readable; no hard-coded colours | ⬜ |
 | 6.8 | 150 % scaling, and moving the window between monitors with different scaling | Layout fits; nothing clipped | ⬜ |
 
+## 7. Installer
+Build with `dotnet build installer/ScheduleShutdown.Installer -c Release` → `installer/ScheduleShutdown.Installer/bin/Release/ScheduleShutdown-x64.msi`. Installing and uninstalling need a UAC prompt (per-machine install). Launch the installed exe with `SCHEDULE_SHUTDOWN_DRYRUN=1` for any testing.
+
+| # | Check | Expected | Status |
+|---|---|---|---|
+| 7.1 | Double-click the MSI | Welcome → Destination Folder (`C:\Program Files\Schedule Shutdown\`) → Ready → Finish; no license page; Back works | ✅ Auto |
+| 7.2 | After install | 528 files in Program Files; Start-menu "Schedule Shutdown" shortcut; Apps entry "Schedule Shutdown" 1.0.0.0 by Navojith, no Modify button | ✅ Auto |
+| 7.3 | "Launch Schedule Shutdown" checkbox on the last page | Ticked by default; starts the app (not elevated) | ✅ checkbox shown / ⬜ launch |
+| 7.4 | Start the app from the Start menu | Opens; toasts show "Schedule Shutdown" + icon | ⬜ |
+| 7.5 | Uninstall while the app runs (in the tray) | App ended with no "files in use" prompt; files, shortcut and `HKLM\Software\Schedule Shutdown` removed; `%LOCALAPPDATA%\ScheduleShutdown` kept | ✅ Auto |
+| 7.6 | `msiexec /x ScheduleShutdown-x64.msi REMOVEDATA=1` | Also deletes `%LOCALAPPDATA%\ScheduleShutdown` for that user | ✅ Auto |
+| 7.7 | Uninstall from Settings → Apps | Same as 7.5 | ⬜ |
+| 7.8 | Install a higher `<Version>` over the old one | Upgrades in place, one Apps entry; running app is ended first | ⬜ |
+| 7.9 | Install and uninstall on a clean Windows 11 VM / Windows Sandbox | Works with no .NET or Windows App SDK installed | ⬜ |
+| 7.10 | SmartScreen on the unsigned MSI downloaded from the web | "Windows protected your PC" → More info → Run anyway | ⬜ |
+
 ## Notes
 - **3.7**: toast names and icons are cached per notification identity, which comes from the exe path. The dev build path still shows the old "ScheduleShutdown" from earlier runs. A copy at a new path showed the correct header, and so will the installed app.
 - Toast buttons (3.2, 3.3, 5.5) can't be clicked through UI Automation.

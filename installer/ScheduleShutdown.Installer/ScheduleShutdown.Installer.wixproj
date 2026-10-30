@@ -1,0 +1,29 @@
+<Project Sdk="WixToolset.Sdk/5.0.2">
+
+  <PropertyGroup>
+    <InstallerPlatform>x64</InstallerPlatform>
+    <OutputName>ScheduleShutdown-$(InstallerPlatform)</OutputName>
+    <!--
+      ICE03: Microsoft.ui.xaml.dll lists 85 languages (too long for File.Language) and two .mui files use
+      LCID 1169, which ICE03 doesn't know. Windows Installer only uses Language when versions tie.
+      ICE43/ICE57: they treat ProgramMenuFolder as per-user, but this package is per-machine.
+    -->
+    <SuppressIces>ICE03;ICE43;ICE57</SuppressIces>
+    <AppProject>$(MSBuildThisFileDirectory)..\..\src\ScheduleShutdown.App\ScheduleShutdown.App.csproj</AppProject>
+    <!-- Self-contained publish of the app; Package.wxs harvests everything in it. -->
+    <AppPublishDir>$(MSBuildThisFileDirectory)obj\$(Configuration)\app\</AppPublishDir>
+    <DefineConstants>AppPublishDir=$(AppPublishDir);AppAssetsDir=$(MSBuildThisFileDirectory)..\..\src\ScheduleShutdown.App\Assets\</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="WixToolset.UI.wixext" Version="5.0.2" />
+    <PackageReference Include="WixToolset.Util.wixext" Version="5.0.2" />
+  </ItemGroup>
+
+  <!-- Publishes into a clean folder so files removed from the app never linger in the MSI. -->
+  <Target Name="PublishApp" BeforeTargets="BeforeBuild">
+    <RemoveDir Directories="$(AppPublishDir)" />
+    <Exec Command="dotnet publish &quot;$(AppProject)&quot; -c $(Configuration) -r win-x64 --self-contained -o &quot;$(AppPublishDir.TrimEnd('\'))&quot;" />
+  </Target>
+
+</Project>

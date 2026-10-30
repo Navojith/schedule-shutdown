@@ -5,7 +5,7 @@ Tracks implementation status against [docs/PLAN.md](docs/PLAN.md). Update this f
 Legend: `[x]` done · `[~]` in progress · `[ ]` not started
 
 ## Status summary
-- **Current phase:** 6 — Polish (built and checked in dry run; waiting on the manual items in `docs/QA.md`)
+- **Current phase:** 7 — Installer (MSI built and verified on this PC; clean-VM and upgrade checks open). Phase 6 manual QA items also still open.
 - **Last updated:** 2026-10-30
 
 ## Phases
@@ -68,8 +68,11 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` not started
 - [ ] Manual QA items marked ⬜ in `docs/QA.md` (toast buttons, keyboard, Narrator, high contrast, 150 % / multi-monitor, sleep/resume, theme restart)
 
 ### Phase 7 — Installer
-- [ ] WiX v5 MSI project
-- [ ] Install/uninstall verified on clean Windows 11
+- [x] WiX v5 MSI project (`installer/ScheduleShutdown.Installer`, WixToolset.Sdk 5.0.2 + UI/Util extensions; not in the .sln so normal builds stay fast). Its build runs `dotnet publish` (self-contained) into `obj\<Config>\app\` and harvests it with `<Files>`; output `bin\Release\ScheduleShutdown-x64.msi` (72 MB)
+- [x] Per-machine install to `Program Files\Schedule Shutdown`, Start-menu shortcut, ARP icon, version bound from the exe, MajorUpgrade, WixUI_InstallDir without the license page, "Launch" checkbox on the last page
+- [x] Uninstall/upgrade end the running app first (`taskkill` before `InstallValidate`); user data kept unless `REMOVEDATA=1`; `MSIFASTINSTALL=1` skips the restore point
+- [x] Verified on this PC: UI pages via UIA, install (528 files, shortcut, Apps entry), installed exe runs in dry run, uninstall while running, `REMOVEDATA=1`
+- [ ] Install/uninstall on a clean Windows 11 VM / Windows Sandbox, upgrade over an older version, and the other ⬜ items in `docs/QA.md` §7
 
 ### Phase 8 — Real-shutdown test
 - [ ] Normal shutdown (blocked by unsaved Notepad as expected)
@@ -86,6 +89,7 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` not started
 | 2026-10-30 | Phase 4 done: toasts, final countdown window, tray icon/menu, close-to-tray, exit confirmation, DIP window sizing; verified in dry run. 84 tests pass, 0 warnings. Toast-button clicks still need a manual check. |
 | 2026-10-30 | Phase 5 done: `JsonStateStore` + tests, restore on launch with InfoBars, single-instance redirect via custom Main, separate dry-run state file; verified in dry run. 103 tests pass, 0 warnings. |
 | 2026-10-30 | Phase 6 built: icon + generator, settings page (theme, about), TitleBar navigation, theme service, accessibility names, min window size, QA checklist; verified in dry run. 113 tests pass, 0 warnings. Manual QA items still open. |
+| 2026-10-30 | Phase 7 built: WiX v5 MSI (per-machine, shortcut, launch checkbox, kill-before-validate, `REMOVEDATA`); install/uninstall verified on this PC. First uninstall attempt hung on a Restart Manager "files in use" prompt; fixed. Clean-VM and upgrade checks open. |
 
 ## Open questions / decisions
 - No WinUI CLI template is installed, so the App project files were written by hand. Add new pages/windows by copying the existing XAML + code-behind pattern.
@@ -112,4 +116,9 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` not started
 - Tray icon GUID comes from the exe path (`CreateUniqueGuidForProcessPath`), and stale icons with that GUID are deleted on start (`NIM_DELETE`).
 - `dotnet build` on the App **project** outputs to `bin\Debug\...`; the **solution** build outputs to `bin\x64\Debug\...`. Launch the exe matching the build you just ran.
 - UI-automation tests must not send keystrokes (`SendKeys {ESC}`): they land in the Claude Code terminal and interrupt the session. The tray menu is owner-drawn (no UIA items); click inside its `#32768` window rect instead.
+- Installer `SuppressIces`: ICE03 (Microsoft.ui.xaml.dll's 85-language list overflows File.Language; two `.mui` files use LCID 1169), ICE43/ICE57 (false positives for a per-machine Start-menu shortcut). WiX has no switch to ignore file language info.
+- The tray app ignores WM_CLOSE, so `util:CloseApplication` can't close it, and it runs after `InstallValidate` anyway, where Restart Manager blocks on a "files in use" prompt (an invisible hang under `/qb`). Uninstall/upgrade instead run `taskkill /F /IM ScheduleShutdown.exe` before `InstallValidate`. It kills every process with that name, including a dev build, but only when the product is installed or being upgraded.
+- `REMOVEDATA=1` removes `%LOCALAPPDATA%\ScheduleShutdown` only for the user running the uninstall. Toast registration left by `AppNotificationManager.Register` under HKCU isn't cleaned up by the MSI.
+- MSI `UpgradeCode` is `8B3A9ABE-6315-42E3-A2EC-317959024A93`: never change it. Bump `<Version>` in the App csproj for each release (the MSI version is bound from the exe).
+- WiX CLI 5.0.2 installed as a global dotnet tool (only needed for ad-hoc `wix` commands; the build uses the SDK package). MSI dialog buttons have no UIA Invoke pattern: click them with `PostMessage(hwnd, BM_CLICK)`.
 - PowerShell 5.1 `Get-Content` reads UTF-8 files as ANSI and mangles `·`/`–`. Edit source files with the Edit tool, not PowerShell string replacement.
