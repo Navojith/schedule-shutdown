@@ -5,7 +5,7 @@ Tracks implementation status against [docs/PLAN.md](docs/PLAN.md). Update this f
 Legend: `[x]` done · `[~]` in progress · `[ ]` not started
 
 ## Status summary
-- **Current phase:** 3 — Main UI (next up; Phase 2 done)
+- **Current phase:** 4 — Warnings & tray (next up; Phase 3 done)
 - **Last updated:** 2026-10-30
 
 ## Phases
@@ -32,10 +32,13 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` not started
 - [x] `AppLog`: `%LOCALAPPDATA%\ScheduleShutdown\app.log` + debug output (dry-run commands land here)
 
 ### Phase 3 — Main UI
-- [ ] MainWindow with Mica + custom title bar
-- [ ] At-time mode / Timer mode + presets
-- [ ] Force shutdown toggle with warning text
-- [ ] Active-schedule panel (countdown, +10 min, cancel)
+- [x] DI composition root in `App.xaml.cs`; `DispatcherQueueTimerFactory`; `MainViewModel` (CommunityToolkit.Mvvm partial properties)
+- [x] `Views/MainWindow` with Mica + custom title bar ("(dry run)" suffix) hosting `Views/MainPage`
+- [x] At-time mode (time picks today/tomorrow automatically) / Timer mode + presets; validation errors in an InfoBar
+- [x] Force shutdown toggle with description + warning InfoBar
+- [x] Active-schedule panel (progress ring, countdown, summary, +10 min, cancel); Schedule button pinned to bottom
+- [x] `ScheduleFormatter` (Core) + tests; 73 tests pass
+- [x] Verified in dry run via UI Automation: schedule, +10 min, cancel, and a 1-min forced timer logged `shutdown.exe /s /t 0 /f` on time
 
 ### Phase 4 — Warnings & tray
 - [ ] Toasts at 10 min / 1 min
@@ -66,6 +69,7 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` not started
 | 2026-10-30 | Phase 0 done: git repo, solution, 3 projects, hand-written WinUI 3 csproj, verified build + launch. |
 | 2026-10-30 | Phase 1 done: Core models, abstractions, `ScheduleCalculator`, `ShutdownScheduler`, test fakes; 49 tests pass, 0 warnings. |
 | 2026-10-30 | Phase 2 done: shutdown command + dry-run executor in Core (tested), process executor, factory and log in App; 63 tests pass, 0 warnings. |
+| 2026-10-30 | Phase 3 done: DI, main window/page, view model, formatter; verified schedule/postpone/cancel/due in dry run. 73 tests pass, 0 warnings. |
 
 ## Open questions / decisions
 - No WinUI CLI template is installed, so the App project files were written by hand. Add new pages/windows by copying the existing XAML + code-behind pattern.
@@ -78,3 +82,7 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` not started
 - `ShutdownScheduler.Evaluate()` is public so the App can call it on resume from sleep (Phase 4/5).
 - Nothing calls `ShutdownExecutorFactory` yet: Phase 3 wires it (and the scheduler) into DI. The real executor has no automated test on purpose; it is only exercised in Phase 8.
 - Dry-run accepts `1` or `true`. The real executor is used for any other value, so always check the "(dry run)" window title before testing.
+- App project uses `LangVersion=preview`: CommunityToolkit.Mvvm 8.4 needs it for `[ObservableProperty]` partial properties (field-based ones raise WinRT AOT warnings). Partial properties can't have initializers, so set defaults in the constructor.
+- `IStateStore` is a temporary `InMemoryStateStore` in the App until Phase 5's `JsonStateStore`.
+- Until Phase 4, closing the window exits the app and drops the schedule, and there is no final-countdown dialog (the dry-run shutdown happens straight at the target).
+- PowerShell 5.1 `Get-Content` reads UTF-8 files as ANSI and mangles `·`/`–`. Edit source files with the Edit tool, not PowerShell string replacement.

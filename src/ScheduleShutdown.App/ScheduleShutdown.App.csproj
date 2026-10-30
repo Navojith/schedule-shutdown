@@ -11,6 +11,8 @@
     <Platforms>x64</Platforms>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <UseWinUI>true</UseWinUI>
+    <!-- CommunityToolkit.Mvvm 8.4 generates [ObservableProperty] partial properties only with preview C#. -->
+    <LangVersion>preview</LangVersion>
     <EnableMsixTooling>true</EnableMsixTooling>
     <!-- Unpackaged app with the Windows App SDK runtime bundled, so users need no extra installs. -->
     <WindowsPackageType>None</WindowsPackageType>
@@ -22,6 +24,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2957" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.6.4" />
   </ItemGroup>
