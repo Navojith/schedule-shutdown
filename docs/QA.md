@@ -53,7 +53,7 @@ Status: ✅ passed · ❌ failed · ⬜ not run yet. "Auto" means checked throug
 | 4.6 | Tray icon looks sharp at 100 %, 125 %, 150 % scaling | Blue power icon, not blurry | ⬜ (125 % ✅) |
 | 4.7 | Resize the window smaller | Can't go below 460 × 620 | ✅ Auto |
 | 4.8 | Maximize | Disabled | ⬜ |
-| 4.9 | Small screen: 1024 × 768 at 125 % (VM) | Whole window on screen | ❌ Window is 575 × 775 px at (160, 160): the Schedule button sits under the taskbar / off screen |
+| 4.9 | Small screen: 1024 × 768 at 125 % (VM) | Whole window on screen | ✅ VM: 575 × 708 px at (96, 0) in a 708 px work area, Schedule button visible (was ❌ 575 × 775 px before the size was capped at the work area) |
 
 ## 5. Persistence and single instance
 | # | Check | Expected | Status |

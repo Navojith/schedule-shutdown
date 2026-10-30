@@ -5,7 +5,7 @@ Tracks implementation status against [docs/PLAN.md](docs/PLAN.md). Update this f
 Legend: `[x]` done · `[~]` in progress · `[ ]` not started
 
 ## Status summary
-- **Current phase:** 8 done — all phases built and verified. Open: small-screen window overflow (QA 4.9), Phase 6 manual QA items, SmartScreen (7.10), Settings-UI uninstall click-through (7.7).
+- **Current phase:** 8 done — all phases built and verified. Open: Phase 6 manual QA items, SmartScreen (7.10), Settings-UI uninstall click-through (7.7).
 - **Last updated:** 2026-10-30
 
 ## Phases
@@ -78,7 +78,8 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` not started
 ### Phase 8 — Real-shutdown test
 - [x] Normal shutdown: `shutdown.exe /s /t 0` ran at the target second; a blocker app (unsaved work) stopped it with Windows' "Closing 1 app" screen and the VM stayed on. Modern Notepad doesn't block (it keeps unsaved tabs).
 - [x] Force shutdown: `shutdown.exe /s /t 0 /f` ran on time and the VM powered off within 8 s despite the blocker
-- [ ] Fix: main window overflows a 1024 × 768 screen at 125 % (QA 4.9): Schedule button off screen
+- [x] Fix: main window overflows a 1024 × 768 screen at 125 % (QA 4.9): `WindowSizing` now caps the size and minimum size at the work area and moves the main window inside it (the form already scrolls above the pinned Schedule button)
+- [x] Re-checked QA 4.9 in the VM (installed MSI, 1024 × 768 at 125 %): window 575 × 708 px at (96, 0), exactly the work-area height; Schedule button above the taskbar
 
 ## Session log
 | Date | Summary |
@@ -93,6 +94,7 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` not started
 | 2026-10-30 | Phase 6 built: icon + generator, settings page (theme, about), TitleBar navigation, theme service, accessibility names, min window size, QA checklist; verified in dry run. 113 tests pass, 0 warnings. Manual QA items still open. |
 | 2026-10-30 | Phase 7 built: WiX v5 MSI (per-machine, shortcut, launch checkbox, kill-before-validate, `REMOVEDATA`); install/uninstall verified on this PC. First uninstall attempt hung on a Restart Manager "files in use" prompt; fixed. Clean-VM and upgrade checks open. |
 | 2026-10-30 | Phase 7 VM checks + Phase 8 done in a VirtualBox Win11 Home VM (unattended install; VBoxSVGA showed a black screen, VMSVGA fixed it; live snapshots hang on top of Hyper-V, offline ones work). Clean install/upgrade/uninstall pass; real normal shutdown blocked as expected, forced shutdown powered the VM off. Found: window overflows small screens. |
+| 2026-10-30 | Fixed QA 4.9: window size, minimum size and position clamped to the display's work area. Build 0 warnings, 113 tests pass; normal-size launch unchanged. VM re-check passed (MSI install, 575 × 708 px window in a 708 px work area). |
 
 ## Open questions / decisions
 - No WinUI CLI template is installed, so the App project files were written by hand. Add new pages/windows by copying the existing XAML + code-behind pattern.
