@@ -35,6 +35,29 @@ public class ScheduleFormatterTests
     }
 
     [Theory]
+    [InlineData(60_000, 60)]
+    [InlineData(59_001, 60)]
+    [InlineData(59_000, 59)]
+    [InlineData(1, 1)]
+    [InlineData(0, 0)]
+    [InlineData(-3_000, 0)]
+    public void CountdownSeconds_RoundsUpAndNeverNegative(int milliseconds, int expected)
+    {
+        ScheduleFormatter.CountdownSeconds(TimeSpan.FromMilliseconds(milliseconds)).Should().Be(expected);
+    }
+
+    [Theory]
+    [InlineData(600, "10 minutes")]
+    [InlineData(60, "1 minute")]
+    [InlineData(90, "2 minutes")]
+    [InlineData(30, "30 seconds")]
+    [InlineData(1, "1 second")]
+    public void DescribeLeadTime_UsesMinutesFromOneMinuteUp(int seconds, string expected)
+    {
+        ScheduleFormatter.DescribeLeadTime(TimeSpan.FromSeconds(seconds)).Should().Be(expected);
+    }
+
+    [Theory]
     [InlineData(23, 30, 0, "today at 23:30")]
     [InlineData(7, 0, 1, "tomorrow at 07:00")]
     [InlineData(7, 0, 2, "on Sun 1 Nov at 07:00")]

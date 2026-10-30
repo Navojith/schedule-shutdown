@@ -5,7 +5,7 @@ Tracks implementation status against [docs/PLAN.md](docs/PLAN.md). Update this f
 Legend: `[x]` done · `[~]` in progress · `[ ]` not started
 
 ## Status summary
-- **Current phase:** 4 — Warnings & tray (next up; Phase 3 done)
+- **Current phase:** 5 — Persistence & single instance (next up; Phase 4 done)
 - **Last updated:** 2026-10-30
 
 ## Phases
@@ -41,9 +41,14 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` not started
 - [x] Verified in dry run via UI Automation: schedule, +10 min, cancel, and a 1-min forced timer logged `shutdown.exe /s /t 0 /f` on time
 
 ### Phase 4 — Warnings & tray
-- [ ] Toasts at 10 min / 1 min
-- [ ] Final 60 s countdown dialog (Cancel / Postpone)
-- [ ] Tray icon, tooltip countdown, menu, close-to-tray
+- [x] `NotificationService`: toasts at 10 min / 1 min with Postpone / Cancel buttons (tagged, so 1 min replaces 10 min; removed when the schedule ends), tray hint on first close, dry-run "no shutdown" toast
+- [x] `FinalCountdownWindow` + `CountdownViewModel`: always-on-top, centred, Cancel focused, closes itself when the countdown ends
+- [x] `TrayIconService` (H.NotifyIcon.WinUI 2.3.2): placeholder power icon, live countdown tooltip, Open / Cancel shutdown / Exit menu, left-click opens; clears stale icons left by killed instances
+- [x] `AppShell`: close-to-tray, Exit confirmation ("Exit and cancel" / "Keep running"), `WindowFocus.BringToFront`
+- [x] `ScheduleFormatter.CountdownSeconds` / `DescribeLeadTime` (Core) + tests; 84 tests pass
+- [x] `WindowSizing`: windows sized in DIPs (fixes the high-DPI size issue)
+- [x] Verified in dry run via UI Automation: 10-min and 1-min toasts, countdown window while hidden in tray, postpone from countdown, run to due (dry-run log + toast), tray Open, tray Exit -> confirm -> Keep running / Exit and cancel (icon removed)
+- [ ] Toast button clicks (Postpone / Cancel on the toast itself): UIA can't reach toast buttons, so these need a manual click
 
 ### Phase 5 — Persistence & single instance
 - [ ] `JsonStateStore` (`%LOCALAPPDATA%\ScheduleShutdown\state.json`)
@@ -70,11 +75,12 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` not started
 | 2026-10-30 | Phase 1 done: Core models, abstractions, `ScheduleCalculator`, `ShutdownScheduler`, test fakes; 49 tests pass, 0 warnings. |
 | 2026-10-30 | Phase 2 done: shutdown command + dry-run executor in Core (tested), process executor, factory and log in App; 63 tests pass, 0 warnings. |
 | 2026-10-30 | Phase 3 done: DI, main window/page, view model, formatter; verified schedule/postpone/cancel/due in dry run. 73 tests pass, 0 warnings. |
+| 2026-10-30 | Phase 4 done: toasts, final countdown window, tray icon/menu, close-to-tray, exit confirmation, DIP window sizing; verified in dry run. 84 tests pass, 0 warnings. Toast-button clicks still need a manual check. |
 
 ## Open questions / decisions
 - No WinUI CLI template is installed, so the App project files were written by hand. Add new pages/windows by copying the existing XAML + code-behind pattern.
 - FluentAssertions pinned to **7.2.0**: v8+ needs a paid commercial license. Don't upgrade.
-- `AppWindow.Resize` uses physical pixels, so the window is smaller on high-DPI screens. Fix with DPI scaling in Phase 6.
+- `AppWindow.Resize` uses physical pixels; fixed in Phase 4 with `WindowSizing.Resize` (DIPs via `GetDpiForWindow`). Windows don't re-size when moved to a monitor with another DPI (Phase 6).
 - Timer abstraction is `ITickTimer`, not `ITimer`, because `System.Threading.ITimer` (implicit usings) would clash. No real timer implementation in Core: the App provides a `DispatcherQueue`-based `ITimerFactory` in Phase 3 (the scheduler isn't thread-safe and expects UI-thread ticks).
 - Late final countdown rule: if the final countdown would start with < 55 s left (sleep/resume, overdue restore, at-time a few seconds away), the target moves to now + 60 s and is re-saved, so the user always gets about a full minute to cancel.
 - Warnings: thresholds at or above the remaining time when scheduling/postponing never fire. After a sleep that crosses several thresholds, only the smallest one fires.
@@ -84,5 +90,12 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` not started
 - Dry-run accepts `1` or `true`. The real executor is used for any other value, so always check the "(dry run)" window title before testing.
 - App project uses `LangVersion=preview`: CommunityToolkit.Mvvm 8.4 needs it for `[ObservableProperty]` partial properties (field-based ones raise WinRT AOT warnings). Partial properties can't have initializers, so set defaults in the constructor.
 - `IStateStore` is a temporary `InMemoryStateStore` in the App until Phase 5's `JsonStateStore`.
-- Until Phase 4, closing the window exits the app and drops the schedule, and there is no final-countdown dialog (the dry-run shutdown happens straight at the target).
+- Exit from the tray with an active schedule **cancels** it (after confirmation), so Phase 5's restore never brings back a schedule the user exited out of. Only kill/crash leaves a saved schedule to restore.
+- Toasts show "ScheduleShutdown" (the exe name) as the app name, because `AppNotificationManager.Register()` has no display name or icon for unpackaged apps. Fix in Phase 6 with the app icon (`Register(displayName, iconUri)`).
+- Tray icon is a placeholder drawn with GDI+ shapes (`PlaceholderTrayIcon`). H.NotifyIcon's `GeneratedIconSource` didn't render the Segoe Fluent glyph. Replace with the real .ico in Phase 6.
+- H.NotifyIcon.WinUI is pinned to **2.3.2**: 2.4.x targets .NET 10 only. `ForceCreate(false)` keeps Efficiency Mode off (it would throttle the countdown timer).
+- Tray icon GUID comes from the exe path (`CreateUniqueGuidForProcessPath`), and stale icons with that GUID are deleted on start (`NIM_DELETE`).
+- A clicked toast when the app isn't running launches a new instance; Phase 5's single-instance redirect should route that activation to the running app.
+- `dotnet build` on the App **project** outputs to `bin\Debug\...`; the **solution** build outputs to `bin\x64\Debug\...`. Launch the exe matching the build you just ran.
+- UI-automation tests must not send keystrokes (`SendKeys {ESC}`): they land in the Claude Code terminal and interrupt the session. The tray menu is owner-drawn (no UIA items); click inside its `#32768` window rect instead.
 - PowerShell 5.1 `Get-Content` reads UTF-8 files as ANSI and mangles `·`/`–`. Edit source files with the Edit tool, not PowerShell string replacement.

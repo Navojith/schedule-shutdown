@@ -3,7 +3,6 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using ScheduleShutdown.App.Services;
 using ScheduleShutdown.App.ViewModels;
-using ScheduleShutdown.App.Views;
 using ScheduleShutdown.Core.Abstractions;
 using ScheduleShutdown.Core.Execution;
 using ScheduleShutdown.Core.Scheduling;
@@ -12,8 +11,6 @@ namespace ScheduleShutdown.App;
 
 public partial class App : Application
 {
-    private Window? _window;
-
     public App()
     {
         InitializeComponent();
@@ -28,8 +25,7 @@ public partial class App : Application
         var environment = Services.GetRequiredService<AppEnvironment>();
         Services.GetRequiredService<AppLog>().Write(environment.IsDryRun ? "Started (dry run)" : "Started");
 
-        _window = new MainWindow(environment);
-        _window.Activate();
+        Services.GetRequiredService<AppShell>().Start();
     }
 
     private static ServiceProvider ConfigureServices(DispatcherQueue dispatcherQueue)
@@ -43,6 +39,9 @@ public partial class App : Application
         services.AddSingleton<IStateStore, InMemoryStateStore>();
         services.AddSingleton<ShutdownScheduler>();
         services.AddSingleton<MainViewModel>();
+        services.AddSingleton(sp => new NotificationService(dispatcherQueue, sp.GetRequiredService<AppLog>()));
+        services.AddSingleton<TrayIconService>();
+        services.AddSingleton<AppShell>();
         return services.BuildServiceProvider();
     }
 }

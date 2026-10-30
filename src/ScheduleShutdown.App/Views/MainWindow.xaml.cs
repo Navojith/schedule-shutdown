@@ -1,7 +1,6 @@
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using ScheduleShutdown.App.Services;
-using Windows.Graphics;
 
 namespace ScheduleShutdown.App.Views;
 
@@ -21,7 +20,7 @@ public sealed partial class MainWindow : Window
         SetTitleBar(AppTitleBar);
         AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
 
-        AppWindow.Resize(new SizeInt32(460, 620));
+        WindowSizing.Resize(this, 460, 620);
         if (AppWindow.Presenter is OverlappedPresenter presenter)
         {
             presenter.IsMaximizable = false;
