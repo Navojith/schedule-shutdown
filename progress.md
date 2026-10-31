@@ -98,6 +98,7 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` not started
 | 2026-10-30 | Phase 7 VM checks + Phase 8 done in a VirtualBox Win11 Home VM (unattended install; VBoxSVGA showed a black screen, VMSVGA fixed it; live snapshots hang on top of Hyper-V, offline ones work). Clean install/upgrade/uninstall pass; real normal shutdown blocked as expected, forced shutdown powered the VM off. Found: window overflows small screens. |
 | 2026-10-30 | Fixed QA 4.9: window size, minimum size and position clamped to the display's work area. Build 0 warnings, 113 tests pass; normal-size launch unchanged. VM re-check passed (MSI install, 575 × 708 px window in a 708 px work area). |
 | 2026-10-31 | Dry-run QA pass: past date, > 7 days, 0-min timer, empty/letter/decimal NumberBox input (rounds down), tray Cancel shutdown, maximize disabled for real mouse input, theme kept after restart, log folder opens. All passed. Found and fixed: UIA Invoke on the greyed Maximize caption button still maximized the window; `WindowSizing.PreventMaximize` restores it (main + countdown windows), verified via UIA and real mouse input. |
+| 2026-10-31 | Repo presentation: README (features, install, FAQ, build), MIT LICENSE, dry-run screenshots + 1280×640 social preview in `docs/images/`, GitHub description and topics set. Social preview image still needs a manual upload in repo Settings. |
 
 ## Open questions / decisions
 - No WinUI CLI template is installed, so the App project files were written by hand. Add new pages/windows by copying the existing XAML + code-behind pattern.
