@@ -5,8 +5,8 @@ Tracks implementation status against [docs/PLAN.md](docs/PLAN.md). Update this f
 Legend: `[x]` done · `[~]` in progress · `[ ]` not started
 
 ## Status summary
-- **Current phase:** 8 done — all phases built and verified. Open: Phase 6 manual QA items, SmartScreen (7.10), Settings-UI uninstall click-through (7.7).
-- **Last updated:** 2026-10-30
+- **Current phase:** 8 done — all phases built and verified. All automatable QA items pass. Open: hands-on QA items (toast buttons, sleep/resume, keyboard, Narrator, high contrast, scaling, live theme switch), SmartScreen (7.10), Settings-UI uninstall click-through (7.7), MSI launch checkbox (7.3).
+- **Last updated:** 2026-10-31
 
 ## Phases
 
@@ -65,7 +65,9 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` not started
 - [x] Accessibility: explicit names for presets, +10 min, force toggle (was "Force shutdown Off"); headings on Settings; decorative images hidden from UIA
 - [x] Layout: closed InfoBars collapsed (removed the gap above the form); minimum window size 460 × 620 DIPs
 - [x] Manual QA checklist written (`docs/QA.md`); automatable items checked in dry run; 113 tests pass
-- [ ] Manual QA items marked ⬜ in `docs/QA.md` (toast buttons, keyboard, Narrator, high contrast, 150 % / multi-monitor, sleep/resume, theme restart)
+- [x] Remaining automatable QA items checked in dry run (2026-10-31): 1.3, 1.4, 1.6, 1.7, 4.4, 4.8, 6.2 restart, 6.4
+- [x] Fix: UIA Invoke on the greyed Maximize button maximized the window (`IsMaximizable` only blocks mouse input); `WindowSizing.PreventMaximize` restores it
+- [ ] Manual QA items marked ⬜ in `docs/QA.md` (toast buttons, keyboard, Narrator, high contrast, 100/150 % / multi-monitor, sleep/resume, live Windows theme switch)
 
 ### Phase 7 — Installer
 - [x] WiX v5 MSI project (`installer/ScheduleShutdown.Installer`, WixToolset.Sdk 5.0.2 + UI/Util extensions; not in the .sln so normal builds stay fast). Its build runs `dotnet publish` (self-contained) into `obj\<Config>\app\` and harvests it with `<Files>`; output `bin\Release\ScheduleShutdown-x64.msi` (72 MB)
@@ -95,6 +97,7 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` not started
 | 2026-10-30 | Phase 7 built: WiX v5 MSI (per-machine, shortcut, launch checkbox, kill-before-validate, `REMOVEDATA`); install/uninstall verified on this PC. First uninstall attempt hung on a Restart Manager "files in use" prompt; fixed. Clean-VM and upgrade checks open. |
 | 2026-10-30 | Phase 7 VM checks + Phase 8 done in a VirtualBox Win11 Home VM (unattended install; VBoxSVGA showed a black screen, VMSVGA fixed it; live snapshots hang on top of Hyper-V, offline ones work). Clean install/upgrade/uninstall pass; real normal shutdown blocked as expected, forced shutdown powered the VM off. Found: window overflows small screens. |
 | 2026-10-30 | Fixed QA 4.9: window size, minimum size and position clamped to the display's work area. Build 0 warnings, 113 tests pass; normal-size launch unchanged. VM re-check passed (MSI install, 575 × 708 px window in a 708 px work area). |
+| 2026-10-31 | Dry-run QA pass: past date, > 7 days, 0-min timer, empty/letter/decimal NumberBox input (rounds down), tray Cancel shutdown, maximize disabled for real mouse input, theme kept after restart, log folder opens. All passed. Found and fixed: UIA Invoke on the greyed Maximize caption button still maximized the window; `WindowSizing.PreventMaximize` restores it (main + countdown windows), verified via UIA and real mouse input. |
 
 ## Open questions / decisions
 - No WinUI CLI template is installed, so the App project files were written by hand. Add new pages/windows by copying the existing XAML + code-behind pattern.
@@ -127,4 +130,5 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` not started
 - MSI `UpgradeCode` is `8B3A9ABE-6315-42E3-A2EC-317959024A93`: never change it. Bump `<Version>` in the App csproj for each release (the MSI version is bound from the exe).
 - WiX CLI 5.0.2 installed as a global dotnet tool (only needed for ad-hoc `wix` commands; the build uses the SDK package). MSI dialog buttons have no UIA Invoke pattern: click them with `PostMessage(hwnd, BM_CLICK)`.
 - Test VM: VirtualBox 7.2.22, VM `SchedShutdownTest` (Win11 Home, user `tester` / `test1234`, built-in Administrator enabled with the same password, snapshot `clean-win11` = before any install). `guestcontrol` runs non-elevated as tester, so elevated steps run as `Administrator`; desktop/UI steps run through a scheduled task in tester's session. Use the VMSVGA graphics controller, and take snapshots only while the VM is off.
+- UIA mouse clicks from PowerShell need `SetThreadDpiAwarenessContext(-4)` first: PowerShell is DPI-unaware, so at 125 % clicks at UIA's physical coordinates miss. The Windows 11 tray overflow holds the app icon; open it with the "Show Hidden Icons" button.
 - PowerShell 5.1 `Get-Content` reads UTF-8 files as ANSI and mangles `·`/`–`. Edit source files with the Edit tool, not PowerShell string replacement.

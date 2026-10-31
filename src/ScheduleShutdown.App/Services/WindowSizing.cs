@@ -52,6 +52,26 @@ public static class WindowSizing
             window.AppWindow.Move(new PointInt32(x, y));
     }
 
+    /// <summary>
+    /// Disables maximize. <see cref="OverlappedPresenter.IsMaximizable"/> only stops mouse input: invoking the
+    /// greyed caption button through UI Automation (Narrator, Voice Access) still maximizes, so undo that too.
+    /// </summary>
+    public static void PreventMaximize(Window window)
+    {
+        if (window.AppWindow.Presenter is not OverlappedPresenter presenter)
+            return;
+
+        presenter.IsMaximizable = false;
+        window.AppWindow.Changed += (sender, args) =>
+        {
+            if (args.DidPresenterChange || args.DidSizeChange)
+            {
+                if (sender.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Maximized } current)
+                    current.Restore();
+            }
+        };
+    }
+
     private static RectInt32 WorkArea(Window window) =>
         DisplayArea.GetFromWindowId(window.AppWindow.Id, DisplayAreaFallback.Nearest).WorkArea;
 

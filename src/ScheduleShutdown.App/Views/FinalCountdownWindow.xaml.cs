@@ -21,11 +21,11 @@ public sealed partial class FinalCountdownWindow : Window
         if (AppWindow.Presenter is OverlappedPresenter presenter)
         {
             presenter.IsAlwaysOnTop = true;
-            presenter.IsMaximizable = false;
             presenter.IsMinimizable = false;
             presenter.IsResizable = false;
         }
 
+        WindowSizing.PreventMaximize(this);
         WindowSizing.Resize(this, 380, 340);
         WindowSizing.Center(this);
 

@@ -31,10 +31,7 @@ public sealed partial class MainWindow : Window
         WindowSizing.Resize(this, WidthDips, HeightDips);
         WindowSizing.SetMinimumSize(this, WidthDips, HeightDips);
         WindowSizing.KeepInWorkArea(this);
-        if (AppWindow.Presenter is OverlappedPresenter presenter)
-        {
-            presenter.IsMaximizable = false;
-        }
+        WindowSizing.PreventMaximize(this);
 
         ContentFrame.Navigate(typeof(MainPage));
     }
